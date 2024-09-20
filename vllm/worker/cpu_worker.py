@@ -1,8 +1,12 @@
 """A CPU worker class."""
+import os
+from pathlib import Path
+import socket
 from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.distributed
+from torch.profiler import ExecutionTraceObserver
 
 import vllm.envs as envs
 from vllm.attention import get_attn_backend
@@ -183,15 +187,20 @@ class CPUWorker(LoraNotSupportedWorkerBase, LocalOrDistributedWorkerBase):
         # VLLM_TORCH_PROFILER_DIR=/path/to/save/trace
         if envs.VLLM_TORCH_PROFILER_DIR:
             torch_profiler_trace_dir = envs.VLLM_TORCH_PROFILER_DIR
-            logger.info("Profiling enabled. Traces will be saved to: %s",
-                        torch_profiler_trace_dir)
+            torch_profiler_execution_trace_filename =  f"{socket.gethostname()}_{os.getpid()}.et.trace.json"
+            logger.info("Profiling enabled. Traces will be saved to: %s. Execution trace filename: %s",
+                        torch_profiler_trace_dir, torch_profiler_execution_trace_filename)
+
             self.profiler = torch.profiler.profile(
                 activities=[
                     torch.profiler.ProfilerActivity.CPU,
                 ],
                 with_stack=True,
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(
-                    torch_profiler_trace_dir, use_gzip=True))
+                    torch_profiler_trace_dir, use_gzip=True),
+                execution_trace_observer=(ExecutionTraceObserver().register_callback(
+                    Path(envs.VLLM_TORCH_PROFILER_DIR, torch_profiler_execution_trace_filename).as_posix()))
+            )
         else:
             self.profiler = None
 
