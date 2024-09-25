@@ -215,13 +215,13 @@ class CPUWorker(LoraNotSupportedWorkerBase, LocalOrDistributedWorkerBase):
         self.profiler.start()
 
     def stop_profile(self):
+        if self.profiler is None:
+            raise RuntimeError("Profiler is not enabled.")
+        self.profiler.stop()
         if self.et_observer is None:
             raise RuntimeError("ET Observer is not enabled.")
         self.et_observer.stop()
         self.et_observer.cleanup()
-        if self.profiler is None:
-            raise RuntimeError("Profiler is not enabled.")
-        self.profiler.stop()
 
     def init_device(self) -> None:
         if self.local_omp_cpuid != "all":
