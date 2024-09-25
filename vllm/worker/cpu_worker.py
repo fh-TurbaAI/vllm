@@ -208,7 +208,7 @@ class CPUWorker(LoraNotSupportedWorkerBase, LocalOrDistributedWorkerBase):
         file_name = (f"{socket.gethostname()}_{os.getpid()}."
                      f"{time.time_ns()}.et.trace.json")
         self.et_observer.register_callback(
-            Path(envs.VLLM_TORCH_PROFILER_DIR, file_name))
+            Path(envs.VLLM_TORCH_PROFILER_DIR, file_name).as_posix())
         self.et_observer.start()
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
