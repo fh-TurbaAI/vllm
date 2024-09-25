@@ -1,8 +1,13 @@
 """A CPU worker class."""
+import os
+import socket
+import time
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.distributed
+from torch.profiler import ExecutionTraceObserver
 
 import vllm.envs as envs
 from vllm.attention import get_attn_backend
@@ -192,15 +197,28 @@ class CPUWorker(LoraNotSupportedWorkerBase, LocalOrDistributedWorkerBase):
                 with_stack=True,
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(
                     torch_profiler_trace_dir, use_gzip=True))
+            self.et_observer = ExecutionTraceObserver()
         else:
             self.profiler = None
+            self.et_observer = None
 
     def start_profile(self):
+        if self.et_observer is None:
+            raise RuntimeError("ET Observer is not enabled.")
+        file_name = (f"{socket.gethostname()}_{os.getpid()}."
+                     f"{time.time_ns()}.et.trace.json")
+        self.et_observer.register_callback(
+            Path(envs.VLLM_TORCH_PROFILER_DIR, file_name))
+        self.et_observer.start()
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
         self.profiler.start()
 
     def stop_profile(self):
+        if self.et_observer is None:
+            raise RuntimeError("ET Observer is not enabled.")
+        self.et_observer.stop()
+        self.et_observer.cleanup()
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
         self.profiler.stop()
