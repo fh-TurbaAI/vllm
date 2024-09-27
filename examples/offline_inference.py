@@ -14,7 +14,7 @@ prompts = [
 sampling_params = SamplingParams(temperature=0.8, top_p=0.95, max_tokens=10)
 
 # Create an LLM.
-llm = LLM(model="meta-llama/Meta-Llama-3.1-8B")
+llm = LLM(model="meta-llama/Meta-Llama-3.1-8B", max_model_len=18000)
 
 et = ExecutionTraceObserver()
 et.register_callback("pytorch_et.json")
