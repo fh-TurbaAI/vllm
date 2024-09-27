@@ -4,7 +4,7 @@ from torch.profiler import ExecutionTraceObserver, profile
 from vllm import LLM, SamplingParams
 
 def trace_handler(prof):
-    prof.export_chrome_trace("kineto_trace.json")
+    prof.export_chrome_trace("/home/ubuntu/florian/vllm/kineto_trace.json")
 
 # Sample prompts.
 prompts = [
