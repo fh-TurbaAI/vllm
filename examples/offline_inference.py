@@ -19,16 +19,24 @@ et = ExecutionTraceObserver()
 et.register_callback("pytorch_et.json")
 et.start()
 
-with profile(
+profiler = profile(
     activities=[
         torch.profiler.ProfilerActivity.CPU,
         torch.profiler.ProfilerActivity.CUDA,
     ],
+    with_stack=True,
+    profile_memory=True,
     schedule=torch.profiler.schedule(wait=0, warmup=10, active=1),
     on_trace_ready=trace_handler
-) as prof:
-    llm = LLM(model="meta-llama/Meta-Llama-3.1-8B", max_model_len=18000)
-    outputs = llm.generate(prompts, sampling_params)
+)
+
+profiler.start()
+
+
+llm = LLM(model="meta-llama/Meta-Llama-3.1-8B", max_model_len=18000)
+outputs = llm.generate(prompts, sampling_params)
+
+profiler.stop()
 
 et.stop()
 et.cleanup()
