@@ -1,10 +1,12 @@
 """A GPU worker class."""
 import gc
 import os
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Type, Union
 
 import torch
 import torch.distributed
+from torch.profiler import ExecutionTraceObserver
 
 import vllm.envs as envs
 from vllm.config import (CacheConfig, DeviceConfig, LoadConfig, LoRAConfig,
@@ -130,19 +132,24 @@ class Worker(LocalOrDistributedWorkerBase):
                 ],
                 with_stack=True,
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(
-                    torch_profiler_trace_dir, use_gzip=True))
+                    torch_profiler_trace_dir, use_gzip=True),
+                execution_trace_observer=ExecutionTraceObserver())
         else:
             self.profiler = None
 
     def start_profile(self):
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
+
+        self.profiler.execution_trace_observer.register_callback(
+                Path(envs.VLLM_TORCH_PROFILER_DIR, "pytorch_et.json").as_posix())
         self.profiler.start()
 
     def stop_profile(self):
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
         self.profiler.stop()
+        self.profiler.execution_trace_observer.cleanup()
 
     def _is_encoder_decoder_model(self):
         return self.model_config.is_encoder_decoder_model
