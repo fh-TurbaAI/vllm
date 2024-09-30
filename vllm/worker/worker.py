@@ -1,6 +1,8 @@
 """A GPU worker class."""
 import gc
 import os
+import socket
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Type, Union
 
@@ -140,9 +142,11 @@ class Worker(LocalOrDistributedWorkerBase):
     def start_profile(self):
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
-
+        worker_name = f"{socket.gethostname()}_{os.getpid()}"
+        # Use nanosecond here to avoid naming clash when exporting the trace
+        file_name = f"{worker_name}.{time.time_ns()}.et.trace.json"
         self.profiler.execution_trace_observer.register_callback(
-                Path(envs.VLLM_TORCH_PROFILER_DIR, "pytorch_et.json").as_posix())
+            Path(envs.VLLM_TORCH_PROFILER_DIR, file_name).as_posix())
         self.profiler.start()
 
     def stop_profile(self):
