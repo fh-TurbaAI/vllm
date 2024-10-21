@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Set, Tuple, Type, Union
 
 import torch
 import torch.distributed
+from torch._C._profiler import _ExperimentalConfig
 from torch.profiler import ExecutionTraceObserver
 
 import vllm.envs as envs
@@ -132,9 +133,10 @@ class Worker(LocalOrDistributedWorkerBase):
                     torch.profiler.ProfilerActivity.CPU,
                     torch.profiler.ProfilerActivity.CUDA,
                 ],
-                with_stack=True,
+                with_stack=False,
                 on_trace_ready=torch.profiler.tensorboard_trace_handler(
                     torch_profiler_trace_dir, use_gzip=True),
+                experimental_config=_ExperimentalConfig(enable_cuda_sync_events=True),
                 execution_trace_observer=ExecutionTraceObserver())
         else:
             self.profiler = None
