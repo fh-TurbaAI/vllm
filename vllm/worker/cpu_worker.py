@@ -216,10 +216,12 @@ class CPUWorker(LoraNotSupportedWorkerBase, LocalOrDistributedWorkerBase):
         self.profiler.execution_trace_observer.register_callback(
             Path(envs.VLLM_TORCH_PROFILER_DIR, file_name).as_posix())
         self.profiler.start()
+        self.profiler.step()
 
     def stop_profile(self):
         if self.profiler is None:
             raise RuntimeError("Profiler is not enabled.")
+        self.profiler.step()
         self.profiler.stop()
         self.profiler.execution_trace_observer.cleanup()
 
